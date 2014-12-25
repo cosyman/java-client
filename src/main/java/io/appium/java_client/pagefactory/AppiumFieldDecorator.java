@@ -5,12 +5,14 @@ import io.appium.java_client.android.AndroidElement;
 import io.appium.java_client.ios.IOSElement;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebElement;
@@ -25,34 +27,37 @@ import org.openqa.selenium.support.pagefactory.FieldDecorator;
  * elements using the passed in ElementLocatorFactory.
  * 
  * Please pay attention: fields of {@link WebElement}, {@link RemoteWebElement},
- * {@link MobileElement}, {@link AndroidElement} and {@link IOSElement} are allowed 
- * to use with this decorator
+ * {@link MobileElement}, {@link AndroidElement} and {@link IOSElement} are
+ * allowed to use with this decorator
  */
-public class AppiumFieldDecorator implements FieldDecorator, ResetsImplicitlyWaitTimeOut {
-	
-	private static final List<Class<? extends WebElement>> availableElementClasses = 
-			new ArrayList<Class<? extends WebElement>>(){
-				private static final long serialVersionUID = 1L;
-				{
-					add(WebElement.class);
-					add(RemoteWebElement.class);
-					add(MobileElement.class);
-					add(AndroidElement.class);
-					add(IOSElement.class);
-				}
-		
+public class AppiumFieldDecorator implements FieldDecorator,
+		ResetsImplicitlyWaitTimeOut {
+
+	private static final List<Class<? extends WebElement>> availableElementClasses = new ArrayList<Class<? extends WebElement>>() {
+		private static final long serialVersionUID = 1L;
+		{
+			add(WebElement.class);
+			add(RemoteWebElement.class);
+			add(MobileElement.class);
+			add(AndroidElement.class);
+			add(IOSElement.class);
+		}
+
 	};
-	
+	private FieldInteceptor fieldInteceptor;
+
 	private final AppiumElementLocatorFactory factory;
 
 	public static long DEFAULT_IMPLICITLY_WAIT_TIMEOUT = 1;
 
 	public static TimeUnit DEFAULT_TIMEUNIT = TimeUnit.SECONDS;
 
-	public AppiumFieldDecorator(SearchContext context, long implicitlyWaitTimeOut, TimeUnit timeUnit) {
-		factory = new AppiumElementLocatorFactory(context, implicitlyWaitTimeOut, timeUnit);
+	public AppiumFieldDecorator(SearchContext context,
+			long implicitlyWaitTimeOut, TimeUnit timeUnit) {
+		factory = new AppiumElementLocatorFactory(context,
+				implicitlyWaitTimeOut, timeUnit);
 	}
-	
+
 	public AppiumFieldDecorator(SearchContext context) {
 		factory = new AppiumElementLocatorFactory(context);
 	}
@@ -68,19 +73,18 @@ public class AppiumFieldDecorator implements FieldDecorator, ResetsImplicitlyWai
 		}
 
 		if (WebElement.class.isAssignableFrom(field.getType())) {
-			return proxyForLocator(field, locator); 
+			return proxyForLocator(field, locator);
 		} else if (List.class.isAssignableFrom(field.getType())) {
-			return  proxyForListLocator(locator);
+			return proxyForListLocator(locator);
 		} else {
 			return null;
 		}
 	}
 
-	private static boolean isAvailableElementClass(Type type){	
+	private static boolean isAvailableElementClass(Type type) {
 		boolean result = false;
-		for (Class<? extends WebElement> webElementClass: 
-			availableElementClasses){
-			if (!webElementClass.equals(type)){
+		for (Class<? extends WebElement> webElementClass : availableElementClasses) {
+			if (!webElementClass.equals(type)) {
 				continue;
 			}
 			result = true;
@@ -88,7 +92,7 @@ public class AppiumFieldDecorator implements FieldDecorator, ResetsImplicitlyWai
 		}
 		return result;
 	}
-	
+
 	private boolean isDecoratableList(Field field) {
 		if (!List.class.isAssignableFrom(field.getType())) {
 			return false;
@@ -101,32 +105,42 @@ public class AppiumFieldDecorator implements FieldDecorator, ResetsImplicitlyWai
 			return false;
 		}
 
-		Type listType = ((ParameterizedType) genericType).getActualTypeArguments()[0];	
-		return isAvailableElementClass(listType);		
-		//if there is no annotation list is supposed to be found by org.openqa.selenium.support.ByIdOrName
-		//DefaultElementLocator has an issue :)
+		Type listType = ((ParameterizedType) genericType)
+				.getActualTypeArguments()[0];
+		return isAvailableElementClass(listType);
+		// if there is no annotation list is supposed to be found by
+		// org.openqa.selenium.support.ByIdOrName
+		// DefaultElementLocator has an issue :)
 	}
 
 	private Object proxyForLocator(Field field, ElementLocator locator) {
 		Class<?> type = field.getType();
-		if (type.equals(WebElement.class)){
+		if (type.equals(WebElement.class)) {
 			type = RemoteWebElement.class;
 		}
-		ElementInterceptor elementInterceptor = new ElementInterceptor(locator);
-		return ProxyFactory.getEnhancedProxy(type,
-				elementInterceptor);
+		ElementInterceptor elementInterceptor = new ElementInterceptor(locator,
+				fieldInteceptor);
+		return ProxyFactory.getEnhancedProxy(type, elementInterceptor);
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	private List<WebElement> proxyForListLocator(
-			ElementLocator locator) {
-		ElementListInterceptor elementInterceptor = new ElementListInterceptor(locator);
+	private List<WebElement> proxyForListLocator(ElementLocator locator) {
+		ElementListInterceptor elementInterceptor = new ElementListInterceptor(
+				locator, fieldInteceptor);
 		return ProxyFactory.getEnhancedProxy(ArrayList.class,
 				elementInterceptor);
 	}
 
 	@Override
 	public void resetImplicitlyWaitTimeOut(long timeOut, TimeUnit timeUnit) {
-		factory.resetImplicitlyWaitTimeOut(timeOut, timeUnit);		
+		factory.resetImplicitlyWaitTimeOut(timeOut, timeUnit);
+	}
+
+	public void setFieldInteceptor(FieldInteceptor fieldInteceptor) {
+		this.fieldInteceptor = fieldInteceptor;
+	}
+
+	public static interface FieldInteceptor {
+		void pre(By by, Method method);
 	}
 }

@@ -24,7 +24,7 @@ import org.openqa.selenium.support.ui.FluentWait;
 
 import com.google.common.base.Function;
 
-class AppiumElementLocator implements ElementLocator {
+public class AppiumElementLocator implements ElementLocator {
 	
 	// This function waits for not empty element list using all defined by
 	private static class WaitingFunction implements
@@ -46,6 +46,11 @@ class AppiumElementLocator implements ElementLocator {
 				return null;
 			}
 		}
+	}
+
+	
+	public By getBy() {
+		return by;
 	}
 
 	private final SearchContext searchContext;

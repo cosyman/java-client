@@ -5,7 +5,7 @@
 
     <groupId>io.appium</groupId>
     <artifactId>java-client</artifactId>
-    <version>2.1.0</version>
+    <version>2.1.0c1</version>
     <dependencies>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -67,14 +67,16 @@
 	</developers>
 
 	<distributionManagement>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
 		<repository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+			<id>releases</id>
+			<name>Local Nexus Repository</name>
+			<url>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/sysdevrelease/</url>
 		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<name>Local Nexus Repository</name>
+			<url>http://maven.dev.sh.ctripcorp.com:8081/nexus/content/repositories/sysdevsnapshot/</url>
+		</snapshotRepository>
 	</distributionManagement>
 
 	<build>
@@ -101,20 +103,6 @@
 						<id>attach-javadocs</id>
 						<goals>
 							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-gpg-plugin</artifactId>
-				<version>1.5</version>
-				<executions>
-					<execution>
-						<id>sign-artifacts</id>
-						<phase>verify</phase>
-						<goals>
-							<goal>sign</goal>
 						</goals>
 					</execution>
 				</executions>
